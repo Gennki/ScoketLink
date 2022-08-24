@@ -1,4 +1,4 @@
-package com.qzb.scoketlink.websocket;
+package com.qzb.smaple;
 
 import android.content.Context;
 import android.net.nsd.NsdServiceInfo;
@@ -10,9 +10,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.qzb.scoketlink.bean.DeviceItem;
-import com.qzb.scoketlink.databinding.ItemDeviceBinding;
-import com.qzb.scoketlink.websocket.listener.OnItemChildClickListener;
+import com.qzb.smaple.databinding.ItemDeviceBinding;
 
 import java.util.Objects;
 
