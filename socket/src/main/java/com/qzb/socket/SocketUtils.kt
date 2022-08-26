@@ -27,10 +27,11 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 
 const val TAG = "Socket"
-const val SERVER_PORT = 10086
-const val SERVICE_PORT = 10010
 
 object SocketUtils {
+    const val SERVER_PORT = 10086
+    const val SERVICE_PORT = 10010
+
     /**
      * 当前服务是否已经启动
      */
@@ -51,19 +52,26 @@ object SocketUtils {
     private var discoveryListener: NsdManager.DiscoveryListener? = null
     private var resolveListener: NsdManager.ResolveListener? = null
     private var resolveListenerBusy = AtomicBoolean(false)
+    private var pendingNsdServices = ConcurrentLinkedQueue<NsdServiceInfo>()
+
     private val scope = CoroutineScope(Dispatchers.Main)
-    private var nsdManager: NsdManager? = null
-    private var webSocketServer: WebSocketServer? = null
+
+    private lateinit var appContext: Context
+    private lateinit var nsdManager: NsdManager
+
+    fun init(context: Context) {
+        appContext = context
+        nsdManager = appContext.getSystemService(Context.NSD_SERVICE) as NsdManager
+    }
 
     /*==============================================开启服务相关=============================================*/
     /**
      * 开启服务端
      */
-    fun startServer(context: Context, serviceName: String, serverListener: ServerListener) {
-        // 开启前先关闭所有服务，防止端口被占用
-        stopService(context)
-
-        webSocketServer = object : WebSocketServer(InetSocketAddress(SERVER_PORT)) {
+    fun startServer(serviceName: String, serverListener: ServerListener) {
+//        val serverPort = getUnUsedPort()
+        val serverPort = SERVER_PORT
+        val webSocketServer = object : WebSocketServer(InetSocketAddress(serverPort)) {
             override fun onOpen(conn: WebSocket?, handshake: ClientHandshake?) {
                 // 本机被外部设备连接上了
                 val ip = conn?.remoteSocketAddress?.address?.hostAddress
@@ -112,16 +120,15 @@ object SocketUtils {
                 }
             }
         }
-        webSocketServer?.start()
-        startService(context.applicationContext, serviceName)
+        webSocketServer.start()
     }
 
 
     /**
      * 开启服务
      */
-    private fun startService(context: Context, serviceName: String) {
-        stopService(context)
+    fun startService(serviceName: String) {
+        stopService()
         if (registrationListener == null) {
             registrationListener = object : NsdManager.RegistrationListener {
                 override fun onRegistrationFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {
@@ -147,16 +154,15 @@ object SocketUtils {
         serviceInfo.serviceName = serviceName
         serviceInfo.serviceType = SERVICE_TYPE
         serviceInfo.port = SERVICE_PORT
-        getNsdManager(context).registerService(serviceInfo, NsdManager.PROTOCOL_DNS_SD, registrationListener)
+        nsdManager.registerService(serviceInfo, NsdManager.PROTOCOL_DNS_SD, registrationListener)
     }
 
-    fun stopService(context: Context) {
+    fun stopService() {
         try {
-            registrationListener?.let { getNsdManager(context).unregisterService(it) }
+            registrationListener?.let { nsdManager.unregisterService(it) }
         } catch (e: Exception) {
+            e.printStackTrace()
         }
-        webSocketServer?.stop()
-        webSocketServer = null
     }
 
     /*==============================================发现服务相关=============================================*/
@@ -164,81 +170,95 @@ object SocketUtils {
      * 发现服务
      */
     fun discoverServer(socketDiscoveryListener: SocketDiscoveryListener) {
-        if (discoveryListener == null) {
-            discoveryListener = object : NsdManager.DiscoveryListener {
-                override fun onStartDiscoveryFailed(serviceType: String?, errorCode: Int) {
-                    scope.launch {
-                        socketDiscoveryListener.onStartDiscoveryFailed(serviceType, errorCode)
-                    }
+        discoveryListener = object : NsdManager.DiscoveryListener {
+            override fun onStartDiscoveryFailed(serviceType: String?, errorCode: Int) {
+                scope.launch {
+                    socketDiscoveryListener.onStartDiscoveryFailed(serviceType, errorCode)
                 }
+            }
 
-                override fun onStopDiscoveryFailed(serviceType: String?, errorCode: Int) {
-                    scope.launch {
-                        socketDiscoveryListener.onStopDiscoveryFailed(serviceType, errorCode)
-                    }
+            override fun onStopDiscoveryFailed(serviceType: String?, errorCode: Int) {
+                scope.launch {
+                    socketDiscoveryListener.onStopDiscoveryFailed(serviceType, errorCode)
                 }
+            }
 
-                override fun onDiscoveryStarted(serviceType: String?) {
-                    scope.launch {
-                        socketDiscoveryListener.onDiscoveryStarted(serviceType)
-                    }
+            override fun onDiscoveryStarted(serviceType: String?) {
+                scope.launch {
+                    socketDiscoveryListener.onDiscoveryStarted(serviceType)
                 }
+            }
 
-                override fun onDiscoveryStopped(serviceType: String?) {
-                    scope.launch {
-                        socketDiscoveryListener.onDiscoveryStopped(serviceType)
-                    }
+            override fun onDiscoveryStopped(serviceType: String?) {
+                scope.launch {
+                    socketDiscoveryListener.onDiscoveryStopped(serviceType)
                 }
+            }
 
-                override fun onServiceFound(serviceInfo: NsdServiceInfo?) {
-                    // 发现服务后，需要解析这个服务的信息，只有解析成功的服务才能被使用
-                    if (resolveListener == null) {
-                        resolveListener = object : NsdManager.ResolveListener {
-                            override fun onResolveFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {
-                                scope.launch {
-                                    socketDiscoveryListener.onResolveFailed(serviceInfo, errorCode)
-                                }
+            override fun onServiceFound(serviceInfo: NsdServiceInfo?) {
+                // 发现服务后，需要解析这个服务的信息，只有解析成功的服务才能被使用
+                if (resolveListener == null) {
+                    resolveListener = object : NsdManager.ResolveListener {
+                        override fun onResolveFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {
+                            scope.launch {
+                                socketDiscoveryListener.onResolveFailed(serviceInfo, errorCode)
                             }
+                        }
 
-                            override fun onServiceResolved(serviceInfo: NsdServiceInfo?) {
-                                scope.launch {
-                                    socketDiscoveryListener.onServiceResolved(serviceInfo)
-                                }
+                        override fun onServiceResolved(serviceInfo: NsdServiceInfo?) {
+                            scope.launch {
+                                socketDiscoveryListener.onServiceResolved(serviceInfo)
                                 resolveNextInQueue()
                             }
-
                         }
-                    }
-                    if (resolveListenerBusy.compareAndSet(false, true)) {
-                        nsdManager?.resolveService(serviceInfo, resolveListener)
-                    } else {
-                        pendingNsdServices.add(serviceInfo)
-                    }
-                    if (serviceInfo?.host?.hostAddress != null) {
-                        socketDiscoveryListener.onServiceFound(serviceInfo)
+
                     }
                 }
-
-                override fun onServiceLost(serviceInfo: NsdServiceInfo?) {
-                    pendingNsdServices.remove(serviceInfo)
-                    scope.launch {
-                        socketDiscoveryListener.onServiceLost(serviceInfo)
-                    }
+                if (resolveListenerBusy.compareAndSet(false, true)) {
+                    nsdManager.resolveService(serviceInfo, resolveListener)
+                } else {
+                    pendingNsdServices.add(serviceInfo)
                 }
-
+                if (serviceInfo?.host?.hostAddress != null) {
+                    socketDiscoveryListener.onServiceFound(serviceInfo)
+                }
             }
+
+            override fun onServiceLost(serviceInfo: NsdServiceInfo?) {
+                scope.launch {
+                    pendingNsdServices.remove(serviceInfo)
+                    socketDiscoveryListener.onServiceLost(serviceInfo)
+                }
+            }
+
         }
-        nsdManager?.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
+        scope.launch {
+            delay(1000)
+            nsdManager?.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
+        }
+    }
+
+    private fun resolveNextInQueue() {
+        val nextNsdService = pendingNsdServices.poll()
+        if (nextNsdService != null) {
+            nsdManager.resolveService(nextNsdService, resolveListener)
+        } else {
+            resolveListenerBusy.set(false)
+        }
     }
 
     /**
      * 停止发现服务
      */
     fun stopDiscoverServer() {
-        discoveryListener?.let {
-            nsdManager?.stopServiceDiscovery(it)
+        try {
+            discoveryListener?.let {
+                nsdManager?.stopServiceDiscovery(it)
+            }
+            discoveryListener = null
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        discoveryListener = null
     }
 
 
@@ -332,30 +352,6 @@ object SocketUtils {
         serverSocket.close()
         return serverSocket.localPort
     }
-
-    private fun getNsdManager(context: Context): NsdManager {
-        if (nsdManager == null) {
-            nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
-        }
-        return nsdManager!!
-    }
-
-
-    private var pendingNsdServices = ConcurrentLinkedQueue<NsdServiceInfo>()
-
-    // Resolve next NSD service pending resolution
-    private fun resolveNextInQueue() {
-        // Get the next NSD service waiting to be resolved from the queue
-        val nextNsdService = pendingNsdServices.poll()
-        if (nextNsdService != null) {
-            // There was one. Send to be resolved.
-            nsdManager?.resolveService(nextNsdService, resolveListener)
-        } else {
-            // There was no pending service. Release the flag
-            resolveListenerBusy.set(false)
-        }
-    }
-
 
     /**
      * 获取当前设备名字

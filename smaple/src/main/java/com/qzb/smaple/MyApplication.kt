@@ -17,8 +17,6 @@ import org.java_websocket.WebSocket
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-
+        SocketUtils.init(this)
     }
-
-
 }
