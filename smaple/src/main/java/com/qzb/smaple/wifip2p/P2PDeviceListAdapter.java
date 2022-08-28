@@ -1,7 +1,6 @@
-package com.qzb.smaple;
+package com.qzb.smaple.wifip2p;
 
 import android.content.Context;
-import android.net.nsd.NsdServiceInfo;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -11,15 +10,16 @@ import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.qzb.smaple.databinding.ItemDeviceBinding;
+import com.qzb.smaple.wifiDirect.OnItemChildClickListener;
 
 import java.util.Objects;
 
-public class DeviceListAdapter extends ListAdapter<DeviceItem, DeviceListAdapter.ViewHolder> {
+public class P2PDeviceListAdapter extends ListAdapter<P2PDeviceItem, P2PDeviceListAdapter.ViewHolder> {
 
     private Context context;
     private OnItemChildClickListener onItemChildClickListener;
 
-    public DeviceListAdapter(Context context) {
+    public P2PDeviceListAdapter(Context context) {
         super(new DiffCallback());
         this.context = context;
     }
@@ -35,9 +35,8 @@ public class DeviceListAdapter extends ListAdapter<DeviceItem, DeviceListAdapter
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ItemDeviceBinding binding = holder.getBinding();
-        DeviceItem item = getItem(position);
-        NsdServiceInfo nsdServiceInfo = item.getNsdServiceInfo();
-        binding.tvDevice.setText(nsdServiceInfo.getServiceName());
+        P2PDeviceItem item = getItem(position);
+        binding.tvDevice.setText(item.getWifiP2pDevice().deviceName);
         binding.btnConnect.setText(item.isConnected() ? "断开" : "连接");
     }
 
@@ -65,15 +64,15 @@ public class DeviceListAdapter extends ListAdapter<DeviceItem, DeviceListAdapter
         }
     }
 
-    private static class DiffCallback extends DiffUtil.ItemCallback<DeviceItem> {
+    private static class DiffCallback extends DiffUtil.ItemCallback<P2PDeviceItem> {
 
         @Override
-        public boolean areItemsTheSame(@NonNull DeviceItem oldItem, @NonNull DeviceItem newItem) {
+        public boolean areItemsTheSame(@NonNull P2PDeviceItem oldItem, @NonNull P2PDeviceItem newItem) {
             return oldItem == newItem;
         }
 
         @Override
-        public boolean areContentsTheSame(@NonNull DeviceItem oldItem, @NonNull DeviceItem newItem) {
+        public boolean areContentsTheSame(@NonNull P2PDeviceItem oldItem, @NonNull P2PDeviceItem newItem) {
             return Objects.equals(oldItem, newItem) && oldItem.isConnected() == newItem.isConnected();
         }
     }

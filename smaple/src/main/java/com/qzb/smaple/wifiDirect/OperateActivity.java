@@ -1,4 +1,4 @@
-package com.qzb.smaple;
+package com.qzb.smaple.wifiDirect;
 
 import android.content.Context;
 import android.content.Intent;

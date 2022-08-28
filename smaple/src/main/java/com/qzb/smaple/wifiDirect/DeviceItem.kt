@@ -1,4 +1,4 @@
-package com.qzb.smaple
+package com.qzb.smaple.wifiDirect
 
 import android.net.nsd.NsdServiceInfo
 import java.io.Serializable

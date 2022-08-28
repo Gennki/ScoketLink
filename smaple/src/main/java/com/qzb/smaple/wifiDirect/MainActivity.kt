@@ -1,4 +1,4 @@
-package com.qzb.smaple
+package com.qzb.smaple.wifiDirect
 
 import android.net.nsd.NsdServiceInfo
 import android.os.Bundle
@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.qzb.smaple.R
 import com.qzb.smaple.databinding.ActivityMainBinding
 import com.qzb.socket.ServerListener
 import com.qzb.socket.SocketDiscoveryListener
