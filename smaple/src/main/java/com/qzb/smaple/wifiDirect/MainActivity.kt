@@ -50,9 +50,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        SocketUtils.startServer(SocketUtils.getSelfServiceName(this), object : ServerListener() {
-            override fun onMessage(conn: WebSocket?, message: String?) {
-                super.onMessage(conn, message)
+        SocketUtils.startServer(SocketUtils.getSelfServiceName(this), object : ServerListener<MainActivity>(this) {
+            override fun onMessage(conn: WebSocket?, message: String?, t: MainActivity?) {
+                super.onMessage(conn, message, t)
                 Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
             }
         })
@@ -62,23 +62,23 @@ class MainActivity : AppCompatActivity() {
     private fun connectServer(position: Int) {
         val ip = adapter!!.currentList[position].nsdServiceInfo?.host?.hostAddress
         val port = getPort()
-        SocketUtils.connectServer(ip!!, port, object : com.qzb.socket.ClientListener() {
-            override fun onOpen(handshakedata: ServerHandshake?) {
-                super.onOpen(handshakedata)
+        SocketUtils.connectServer(ip!!, port, object : com.qzb.socket.ClientListener<MainActivity>(this) {
+            override fun onOpen(handshakedata: ServerHandshake?, t: MainActivity?) {
+                super.onOpen(handshakedata, t)
                 toast("连接成功")
                 data[position] = data[position].copy(isConnected = true)
                 adapter!!.submitList(data.toMutableList())
             }
 
-            override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                super.onClose(code, reason, remote)
+            override fun onClose(code: Int, reason: String?, remote: Boolean, t: MainActivity?) {
+                super.onClose(code, reason, remote, t)
                 toast("断开连接")
                 data[position] = data[position].copy(isConnected = false)
                 adapter!!.submitList(data.toMutableList())
             }
 
-            override fun onError(ex: Exception?) {
-                super.onError(ex)
+            override fun onError(ex: Exception?, t: MainActivity?) {
+                super.onError(ex, t)
                 toast(ex?.message)
             }
         })
@@ -100,9 +100,9 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         SocketUtils.startService(SocketUtils.getSelfServiceName(this@MainActivity))
 
-        SocketUtils.discoverServer(object : SocketDiscoveryListener() {
-            override fun onServiceResolved(serviceInfo: NsdServiceInfo?) {
-                super.onServiceResolved(serviceInfo)
+        SocketUtils.discoverServer(object : SocketDiscoveryListener<MainActivity>(this) {
+            override fun onServiceResolved(serviceInfo: NsdServiceInfo?, t: MainActivity?) {
+                super.onServiceResolved(serviceInfo, t)
                 var isInList = false
                 for (deviceBean in data) {
                     if (deviceBean.nsdServiceInfo?.serviceName == serviceInfo?.serviceName) {
@@ -118,8 +118,8 @@ class MainActivity : AppCompatActivity() {
             }
 
 
-            override fun onServiceLost(serviceInfo: NsdServiceInfo?) {
-                super.onServiceLost(serviceInfo)
+            override fun onServiceLost(serviceInfo: NsdServiceInfo?, t: MainActivity?) {
+                super.onServiceLost(serviceInfo, t)
                 val deviceItem = data.find { it.nsdServiceInfo?.serviceName == serviceInfo?.serviceName }
                 deviceItem?.let { data.remove(it) }
                 adapter!!.submitList(data.toMutableList())

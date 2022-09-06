@@ -90,7 +90,7 @@ object SocketUtils {
                     )
                 }
                 scope.launch {
-                    serverListener.onOpen(conn, handshake, serverListener.reference.get()!!)
+                    serverListener.onOpen(conn, handshake, serverListener.reference.get())
                 }
             }
 
@@ -101,25 +101,25 @@ object SocketUtils {
                 val deviceBean = deviceInList.find { it.ip == ip && it.port == port }
                 deviceBean?.let { deviceInList.remove(it) }
                 scope.launch {
-                    serverListener.onClose(conn, code, reason, remote, serverListener.reference.get()!!)
+                    serverListener.onClose(conn, code, reason, remote, serverListener.reference.get())
                 }
             }
 
             override fun onMessage(conn: WebSocket?, message: String?) {
                 scope.launch {
-                    serverListener.onMessage(conn, message, serverListener.reference.get()!!)
+                    serverListener.onMessage(conn, message, serverListener.reference.get())
                 }
             }
 
             override fun onError(conn: WebSocket?, ex: Exception?) {
                 scope.launch {
-                    serverListener.onError(conn, ex, serverListener.reference.get()!!)
+                    serverListener.onError(conn, ex, serverListener.reference.get())
                 }
             }
 
             override fun onStart() {
                 scope.launch {
-                    serverListener.onStart(serverListener.reference.get()!!)
+                    serverListener.onStart(serverListener.reference.get())
                 }
             }
         }
@@ -172,29 +172,29 @@ object SocketUtils {
     /**
      * 发现服务
      */
-    fun discoverServer(socketDiscoveryListener: SocketDiscoveryListener) {
+    fun <T> discoverServer(socketDiscoveryListener: SocketDiscoveryListener<T>) {
         discoveryListener = object : NsdManager.DiscoveryListener {
             override fun onStartDiscoveryFailed(serviceType: String?, errorCode: Int) {
                 scope.launch {
-                    socketDiscoveryListener.onStartDiscoveryFailed(serviceType, errorCode)
+                    socketDiscoveryListener.onStartDiscoveryFailed(serviceType, errorCode, socketDiscoveryListener.reference.get())
                 }
             }
 
             override fun onStopDiscoveryFailed(serviceType: String?, errorCode: Int) {
                 scope.launch {
-                    socketDiscoveryListener.onStopDiscoveryFailed(serviceType, errorCode)
+                    socketDiscoveryListener.onStopDiscoveryFailed(serviceType, errorCode, socketDiscoveryListener.reference.get())
                 }
             }
 
             override fun onDiscoveryStarted(serviceType: String?) {
                 scope.launch {
-                    socketDiscoveryListener.onDiscoveryStarted(serviceType)
+                    socketDiscoveryListener.onDiscoveryStarted(serviceType, socketDiscoveryListener.reference.get())
                 }
             }
 
             override fun onDiscoveryStopped(serviceType: String?) {
                 scope.launch {
-                    socketDiscoveryListener.onDiscoveryStopped(serviceType)
+                    socketDiscoveryListener.onDiscoveryStopped(serviceType, socketDiscoveryListener.reference.get())
                 }
             }
 
@@ -204,13 +204,13 @@ object SocketUtils {
                     resolveListener = object : NsdManager.ResolveListener {
                         override fun onResolveFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {
                             scope.launch {
-                                socketDiscoveryListener.onResolveFailed(serviceInfo, errorCode)
+                                socketDiscoveryListener.onResolveFailed(serviceInfo, errorCode, socketDiscoveryListener.reference.get())
                             }
                         }
 
                         override fun onServiceResolved(serviceInfo: NsdServiceInfo?) {
                             scope.launch {
-                                socketDiscoveryListener.onServiceResolved(serviceInfo)
+                                socketDiscoveryListener.onServiceResolved(serviceInfo, socketDiscoveryListener.reference.get())
                                 resolveNextInQueue()
                             }
                         }
@@ -223,14 +223,14 @@ object SocketUtils {
                     pendingNsdServices.add(serviceInfo)
                 }
                 if (serviceInfo?.host?.hostAddress != null) {
-                    socketDiscoveryListener.onServiceFound(serviceInfo)
+                    socketDiscoveryListener.onServiceFound(serviceInfo, socketDiscoveryListener.reference.get())
                 }
             }
 
             override fun onServiceLost(serviceInfo: NsdServiceInfo?) {
                 scope.launch {
                     pendingNsdServices.remove(serviceInfo)
-                    socketDiscoveryListener.onServiceLost(serviceInfo)
+                    socketDiscoveryListener.onServiceLost(serviceInfo, socketDiscoveryListener.reference.get())
                 }
             }
 
@@ -285,13 +285,13 @@ object SocketUtils {
                     )
                 }
                 scope.launch {
-                    clientListener.onOpen(handshakedata, clientListener.reference.get()!!)
+                    clientListener.onOpen(handshakedata, clientListener.reference.get())
                 }
             }
 
             override fun onMessage(message: String?) {
                 scope.launch {
-                    clientListener.onMessage(message, clientListener.reference.get()!!)
+                    clientListener.onMessage(message, clientListener.reference.get())
                 }
             }
 
@@ -300,13 +300,13 @@ object SocketUtils {
                 val deviceBean = deviceOutList.find { it.ip == ip && it.port == port }
                 deviceBean?.let { deviceOutList.remove(it) }
                 scope.launch {
-                    clientListener.onClose(code, reason, remote, clientListener.reference.get()!!)
+                    clientListener.onClose(code, reason, remote, clientListener.reference.get())
                 }
             }
 
             override fun onError(ex: Exception?) {
                 scope.launch {
-                    clientListener.onError(ex, clientListener.reference.get()!!)
+                    clientListener.onError(ex, clientListener.reference.get())
                 }
             }
         }

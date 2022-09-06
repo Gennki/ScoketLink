@@ -20,23 +20,23 @@ abstract class ServerListener<T> constructor(t: T) {
         reference = WeakReference<T>(t)
     }
 
-    open fun onOpen(conn: WebSocket?, handshake: ClientHandshake?, t: T) {
+    open fun onOpen(conn: WebSocket?, handshake: ClientHandshake?, t: T?) {
         Log.d(TAG, "ServerListener onOpen")
     }
 
-    open fun onClose(conn: WebSocket?, code: Int, reason: String?, remote: Boolean, t: T) {
+    open fun onClose(conn: WebSocket?, code: Int, reason: String?, remote: Boolean, t: T?) {
         Log.d(TAG, "ServerListener onClose")
     }
 
-    open fun onMessage(conn: WebSocket?, message: String?, t: T) {
+    open fun onMessage(conn: WebSocket?, message: String?, t: T?) {
         Log.d(TAG, "ServerListener onMessage:$message")
     }
 
-    open fun onError(conn: WebSocket?, ex: Exception?, t: T) {
+    open fun onError(conn: WebSocket?, ex: Exception?, t: T?) {
         Log.d(TAG, "ServerListener onError:${ex?.message}")
     }
 
-    open fun onStart(t: T) {
+    open fun onStart(t: T?) {
         Log.d(TAG, "ServerListener onStart")
     }
 }
