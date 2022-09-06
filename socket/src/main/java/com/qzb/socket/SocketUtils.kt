@@ -5,7 +5,10 @@ import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.provider.Settings
 import android.util.Log
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.java_websocket.WebSocket
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ClientHandshake
@@ -68,7 +71,7 @@ object SocketUtils {
     /**
      * 开启服务端
      */
-    fun startServer(serviceName: String, serverListener: ServerListener) {
+    fun <T> startServer(serviceName: String, serverListener: ServerListener<T>) {
 //        val serverPort = getUnUsedPort()
         val serverPort = SERVER_PORT
         val webSocketServer = object : WebSocketServer(InetSocketAddress(serverPort)) {
@@ -87,7 +90,7 @@ object SocketUtils {
                     )
                 }
                 scope.launch {
-                    serverListener.onOpen(conn, handshake)
+                    serverListener.onOpen(conn, handshake, serverListener.reference.get()!!)
                 }
             }
 
@@ -98,25 +101,25 @@ object SocketUtils {
                 val deviceBean = deviceInList.find { it.ip == ip && it.port == port }
                 deviceBean?.let { deviceInList.remove(it) }
                 scope.launch {
-                    serverListener.onClose(conn, code, reason, remote)
+                    serverListener.onClose(conn, code, reason, remote, serverListener.reference.get()!!)
                 }
             }
 
             override fun onMessage(conn: WebSocket?, message: String?) {
                 scope.launch {
-                    serverListener.onMessage(conn, message)
+                    serverListener.onMessage(conn, message, serverListener.reference.get()!!)
                 }
             }
 
             override fun onError(conn: WebSocket?, ex: Exception?) {
                 scope.launch {
-                    serverListener.onError(conn, ex)
+                    serverListener.onError(conn, ex, serverListener.reference.get()!!)
                 }
             }
 
             override fun onStart() {
                 scope.launch {
-                    serverListener.onStart()
+                    serverListener.onStart(serverListener.reference.get()!!)
                 }
             }
         }
@@ -234,7 +237,7 @@ object SocketUtils {
         }
         scope.launch {
             delay(1000)
-            nsdManager?.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
+            nsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, discoveryListener)
         }
     }
 
@@ -253,7 +256,7 @@ object SocketUtils {
     fun stopDiscoverServer() {
         try {
             discoveryListener?.let {
-                nsdManager?.stopServiceDiscovery(it)
+                nsdManager.stopServiceDiscovery(it)
             }
             discoveryListener = null
         } catch (e: Exception) {
@@ -266,7 +269,7 @@ object SocketUtils {
     /**
      * 连接服务
      */
-    fun connectServer(ip: String, port: Int, clientListener: ClientListener) {
+    fun <T> connectServer(ip: String, port: Int, clientListener: ClientListener<T>) {
         val uri = URI.create("ws://$ip:$port")
         val client = object : WebSocketClient(uri) {
             override fun onOpen(handshakedata: ServerHandshake?) {
@@ -282,13 +285,13 @@ object SocketUtils {
                     )
                 }
                 scope.launch {
-                    clientListener.onOpen(handshakedata)
+                    clientListener.onOpen(handshakedata, clientListener.reference.get()!!)
                 }
             }
 
             override fun onMessage(message: String?) {
                 scope.launch {
-                    clientListener.onMessage(message)
+                    clientListener.onMessage(message, clientListener.reference.get()!!)
                 }
             }
 
@@ -297,13 +300,13 @@ object SocketUtils {
                 val deviceBean = deviceOutList.find { it.ip == ip && it.port == port }
                 deviceBean?.let { deviceOutList.remove(it) }
                 scope.launch {
-                    clientListener.onClose(code, reason, remote)
+                    clientListener.onClose(code, reason, remote, clientListener.reference.get()!!)
                 }
             }
 
             override fun onError(ex: Exception?) {
                 scope.launch {
-                    clientListener.onError(ex)
+                    clientListener.onError(ex, clientListener.reference.get()!!)
                 }
             }
         }
