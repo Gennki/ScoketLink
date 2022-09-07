@@ -73,7 +73,7 @@ object SocketUtils {
     /**
      * 开启服务端
      */
-    fun startServer(serviceName: String, serverListener: ServerListener) {
+    fun startServer(serverListener: ServerListener) {
 //        val serverPort = getUnUsedPort()
         val serverPort = SERVER_PORT
         webSocketServer = object : WebSocketServer(InetSocketAddress(serverPort)) {
@@ -125,6 +125,7 @@ object SocketUtils {
                 }
             }
         }
+        webSocketServer?.isReuseAddr = true
         webSocketServer?.start()
     }
 
@@ -324,6 +325,7 @@ object SocketUtils {
             }
         }
         if (!client.isOpen) {
+            client.isReuseAddr = true
             client.connect()
         }
     }

@@ -57,7 +57,7 @@ class WifiScanActivity : AppCompatActivity() {
             }
         }
 
-        SocketUtils.startServer(SocketUtils.getSelfServiceName(this), object : ServerListener() {
+        SocketUtils.startServer(object : ServerListener() {
             val reference = WeakReference(this@WifiScanActivity)
             override fun onMessage(conn: WebSocket?, message: String?) {
                 super.onMessage(conn, message)
