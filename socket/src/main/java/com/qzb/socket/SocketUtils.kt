@@ -174,6 +174,7 @@ object SocketUtils {
      * 发现服务
      */
     fun <T> discoverServer(socketDiscoveryListener: SocketDiscoveryListener<T>) {
+        val reference = WeakReference(socketDiscoveryListener)
         discoveryListener = object : NsdManager.DiscoveryListener {
             override fun onStartDiscoveryFailed(serviceType: String?, errorCode: Int) {
                 scope.launch {
@@ -202,7 +203,6 @@ object SocketUtils {
             override fun onServiceFound(serviceInfo: NsdServiceInfo?) {
                 // 发现服务后，需要解析这个服务的信息，只有解析成功的服务才能被使用
                 if (resolveListener == null) {
-                    val reference = WeakReference(socketDiscoveryListener)
                     resolveListener = object : NsdManager.ResolveListener {
                         override fun onResolveFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {
                             scope.launch {
