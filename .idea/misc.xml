@@ -10,6 +10,8 @@
         <entry key="app/src/main/res/layout/activity_wifi_p2_pactivity.xml" value="0.31567028985507245" />
         <entry key="app/src/main/res/layout/activity_wifi_scan.xml" value="0.31567028985507245" />
         <entry key="app/src/main/res/layout/item_device.xml" value="0.45" />
+        <entry key="smaple/src/main/res/layout/activity_main.xml" value="0.31567028985507245" />
+        <entry key="smaple/src/main/res/layout/activity_operate.xml" value="0.353125" />
         <entry key="smaple/src/main/res/layout/activity_wifi_p2_pscan.xml" value="0.13240740740740742" />
         <entry key="smaple/src/main/res/layout/activity_wifi_p2p_scan.xml" value="0.13240740740740742" />
       </map>

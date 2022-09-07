@@ -13,6 +13,5 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "ScoketLink"
-include ':app'
 include ':socket'
 include ':smaple'

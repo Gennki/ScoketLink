@@ -18,17 +18,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ScoketLink">
-
         <activity
             android:name=".wifiDirect.MainActivity"
-            android:exported="true"/>
-
-
-        <activity android:name=".wifiDirect.OperateActivity" />
-
-
-        <activity
-            android:name=".wifip2p.WifiP2pScanActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,6 +27,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".wifiDirect.WifiScanActivity"
+            android:exported="true" />
+
+        <activity android:name=".wifiDirect.OperateActivity" />
+        <activity
+            android:name=".wifip2p.WifiP2pScanActivity"
+            android:exported="true" />
     </application>
 
 </manifest>

@@ -3,11 +3,16 @@ package com.qzb.smaple.wifiDirect;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.qzb.smaple.databinding.ActivityOperateBinding;
 import com.qzb.socket.SocketUtils;
+
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
 
 public class OperateActivity extends AppCompatActivity {
 
@@ -21,6 +26,14 @@ public class OperateActivity extends AppCompatActivity {
     private ActivityOperateBinding binding;
     private String ip;
     private int port;
+    private long sendNum = 0;
+    private Timer timer = new Timer();
+    private final TimerTask task = new TimerTask() {
+        @Override
+        public void run() {
+            SocketUtils.INSTANCE.sendAllMessage(String.valueOf(sendNum++));
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,5 +50,25 @@ public class OperateActivity extends AppCompatActivity {
             binding.tvSend.setText(binding.tvSend.getText().toString() + "\n" + sendText);
         });
 
+
+        binding.btnTest.setOnClickListener(new View.OnClickListener() {
+            private boolean isTimerRun = false;
+
+            @Override
+            public void onClick(View v) {
+                if (!isTimerRun) {
+                    timer.schedule(task, 1000, 1000);
+                    isTimerRun = true;
+                }
+            }
+        });
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        timer.cancel();
+        timer = null;
     }
 }

@@ -12,27 +12,21 @@ import java.lang.ref.WeakReference
  * @Date: 2022/8/23 15:12
  * @Description:
  */
-abstract class ClientListener<T> constructor(t: T) {
-    var reference: WeakReference<T>
+abstract class ClientListener {
 
-    init {
-        reference = WeakReference<T>(t)
-    }
-
-
-    open fun onOpen(handshakedata: ServerHandshake?, t: T?) {
+    open fun onOpen(handshakedata: ServerHandshake?) {
         Log.d(TAG, "ClientListener onOpen")
     }
 
-    open fun onMessage(message: String?, t: T?) {
+    open fun onMessage(message: String?) {
         Log.d(TAG, "ClientListener onMessage:$message")
     }
 
-    open fun onClose(code: Int, reason: String?, remote: Boolean, t: T?) {
+    open fun onClose(code: Int, reason: String?, remote: Boolean) {
         Log.d(TAG, "ClientListener onClose:code=$code,reason=$reason")
     }
 
-    open fun onError(ex: Exception?, t: T?) {
+    open fun onError(ex: Exception?) {
         Log.d(TAG, "ClientListener onError:${ex?.message}")
     }
 }

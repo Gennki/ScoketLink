@@ -1,4 +1,4 @@
-package com.qzb.scoketlink.websocket;
+package com.qzb.smaple.wifiDirect;
 
 import android.content.Context;
 import android.net.nsd.NsdServiceInfo;
@@ -6,24 +6,21 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DiffUtil;
-import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.qzb.scoketlink.bean.DeviceItem;
-import com.qzb.scoketlink.databinding.ItemDeviceBinding;
-import com.qzb.scoketlink.websocket.listener.OnItemChildClickListener;
+import com.qzb.smaple.databinding.ItemDeviceBinding;
 
-import java.util.Objects;
+import java.util.List;
 
-public class DeviceListAdapter extends ListAdapter<DeviceItem, DeviceListAdapter.ViewHolder> {
+public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.ViewHolder> {
 
-    private Context context;
+    private final Context context;
+    private final List<DeviceItem> data;
     private OnItemChildClickListener onItemChildClickListener;
 
-    public DeviceListAdapter(Context context) {
-        super(new DiffCallback());
+    public DeviceAdapter(Context context, List<DeviceItem> data) {
         this.context = context;
+        this.data = data;
     }
 
 
@@ -35,17 +32,24 @@ public class DeviceListAdapter extends ListAdapter<DeviceItem, DeviceListAdapter
     }
 
     @Override
+    public int getItemCount() {
+        return data.size();
+    }
+
+    @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         ItemDeviceBinding binding = holder.getBinding();
-        DeviceItem item = getItem(position);
+        DeviceItem item = data.get(position);
         NsdServiceInfo nsdServiceInfo = item.getNsdServiceInfo();
-        binding.tvDevice.setText(nsdServiceInfo.getServiceName());
+        if (nsdServiceInfo != null) {
+            binding.tvDevice.setText(nsdServiceInfo.getServiceName());
+        }
         binding.btnConnect.setText(item.isConnected() ? "断开" : "连接");
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
 
-        private ItemDeviceBinding binding;
+        private final ItemDeviceBinding binding;
 
         public ViewHolder(ItemDeviceBinding binding) {
             super(binding.getRoot());
@@ -64,19 +68,6 @@ public class DeviceListAdapter extends ListAdapter<DeviceItem, DeviceListAdapter
 
         public ItemDeviceBinding getBinding() {
             return binding;
-        }
-    }
-
-    private static class DiffCallback extends DiffUtil.ItemCallback<DeviceItem> {
-
-        @Override
-        public boolean areItemsTheSame(@NonNull DeviceItem oldItem, @NonNull DeviceItem newItem) {
-            return oldItem == newItem;
-        }
-
-        @Override
-        public boolean areContentsTheSame(@NonNull DeviceItem oldItem, @NonNull DeviceItem newItem) {
-            return Objects.equals(oldItem, newItem) && oldItem.isConnected() == newItem.isConnected();
         }
     }
 

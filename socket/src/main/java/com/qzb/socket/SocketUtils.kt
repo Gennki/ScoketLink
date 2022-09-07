@@ -62,6 +62,7 @@ object SocketUtils {
 
     private lateinit var appContext: Context
     private lateinit var nsdManager: NsdManager
+    private var webSocketServer: WebSocketServer? = null
 
     fun init(context: Context) {
         appContext = context
@@ -72,10 +73,10 @@ object SocketUtils {
     /**
      * 开启服务端
      */
-    fun <T> startServer(serviceName: String, serverListener: ServerListener<T>) {
+    fun startServer(serviceName: String, serverListener: ServerListener) {
 //        val serverPort = getUnUsedPort()
         val serverPort = SERVER_PORT
-        val webSocketServer = object : WebSocketServer(InetSocketAddress(serverPort)) {
+        webSocketServer = object : WebSocketServer(InetSocketAddress(serverPort)) {
             override fun onOpen(conn: WebSocket?, handshake: ClientHandshake?) {
                 // 本机被外部设备连接上了
                 val ip = conn?.remoteSocketAddress?.address?.hostAddress
@@ -91,7 +92,7 @@ object SocketUtils {
                     )
                 }
                 scope.launch {
-                    serverListener.onOpen(conn, handshake, serverListener.reference.get())
+                    serverListener.onOpen(conn, handshake)
                 }
             }
 
@@ -102,29 +103,37 @@ object SocketUtils {
                 val deviceBean = deviceInList.find { it.ip == ip && it.port == port }
                 deviceBean?.let { deviceInList.remove(it) }
                 scope.launch {
-                    serverListener.onClose(conn, code, reason, remote, serverListener.reference.get())
+                    serverListener.onClose(conn, code, reason, remote)
                 }
             }
 
             override fun onMessage(conn: WebSocket?, message: String?) {
                 scope.launch {
-                    serverListener.onMessage(conn, message, serverListener.reference.get())
+                    serverListener.onMessage(conn, message)
                 }
             }
 
             override fun onError(conn: WebSocket?, ex: Exception?) {
                 scope.launch {
-                    serverListener.onError(conn, ex, serverListener.reference.get())
+                    serverListener.onError(conn, ex)
                 }
             }
 
             override fun onStart() {
                 scope.launch {
-                    serverListener.onStart(serverListener.reference.get())
+                    serverListener.onStart()
                 }
             }
         }
-        webSocketServer.start()
+        webSocketServer?.start()
+    }
+
+
+    /**
+     * 关闭服务端
+     */
+    fun stopServer() {
+        webSocketServer?.stop()
     }
 
 
@@ -173,30 +182,30 @@ object SocketUtils {
     /**
      * 发现服务
      */
-    fun <T> discoverServer(socketDiscoveryListener: SocketDiscoveryListener<T>) {
+    fun discoverServer(socketDiscoveryListener: SocketDiscoveryListener) {
         val reference = WeakReference(socketDiscoveryListener)
         discoveryListener = object : NsdManager.DiscoveryListener {
             override fun onStartDiscoveryFailed(serviceType: String?, errorCode: Int) {
                 scope.launch {
-                    socketDiscoveryListener.onStartDiscoveryFailed(serviceType, errorCode, socketDiscoveryListener.reference.get())
+                    socketDiscoveryListener.onStartDiscoveryFailed(serviceType, errorCode)
                 }
             }
 
             override fun onStopDiscoveryFailed(serviceType: String?, errorCode: Int) {
                 scope.launch {
-                    socketDiscoveryListener.onStopDiscoveryFailed(serviceType, errorCode, socketDiscoveryListener.reference.get())
+                    socketDiscoveryListener.onStopDiscoveryFailed(serviceType, errorCode)
                 }
             }
 
             override fun onDiscoveryStarted(serviceType: String?) {
                 scope.launch {
-                    socketDiscoveryListener.onDiscoveryStarted(serviceType, socketDiscoveryListener.reference.get())
+                    socketDiscoveryListener.onDiscoveryStarted(serviceType)
                 }
             }
 
             override fun onDiscoveryStopped(serviceType: String?) {
                 scope.launch {
-                    socketDiscoveryListener.onDiscoveryStopped(serviceType, socketDiscoveryListener.reference.get())
+                    socketDiscoveryListener.onDiscoveryStopped(serviceType)
                 }
             }
 
@@ -206,13 +215,13 @@ object SocketUtils {
                     resolveListener = object : NsdManager.ResolveListener {
                         override fun onResolveFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {
                             scope.launch {
-                                reference.get()?.onResolveFailed(serviceInfo, errorCode, reference.get()?.reference?.get())
+                                reference.get()?.onResolveFailed(serviceInfo, errorCode)
                             }
                         }
 
                         override fun onServiceResolved(serviceInfo: NsdServiceInfo?) {
                             scope.launch {
-                                reference.get()?.onServiceResolved(serviceInfo, reference.get()?.reference?.get())
+                                reference.get()?.onServiceResolved(serviceInfo)
                                 resolveNextInQueue()
                             }
                         }
@@ -225,14 +234,14 @@ object SocketUtils {
                     pendingNsdServices.add(serviceInfo)
                 }
                 if (serviceInfo?.host?.hostAddress != null) {
-                    socketDiscoveryListener.onServiceFound(serviceInfo, socketDiscoveryListener.reference.get())
+                    socketDiscoveryListener.onServiceFound(serviceInfo)
                 }
             }
 
             override fun onServiceLost(serviceInfo: NsdServiceInfo?) {
                 scope.launch {
                     pendingNsdServices.remove(serviceInfo)
-                    socketDiscoveryListener.onServiceLost(serviceInfo, socketDiscoveryListener.reference.get())
+                    socketDiscoveryListener.onServiceLost(serviceInfo)
                 }
             }
 
@@ -261,6 +270,8 @@ object SocketUtils {
                 nsdManager.stopServiceDiscovery(it)
             }
             discoveryListener = null
+            resolveListener = null
+            pendingNsdServices.clear()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -271,7 +282,7 @@ object SocketUtils {
     /**
      * 连接服务
      */
-    fun <T> connectServer(ip: String, port: Int, clientListener: ClientListener<T>) {
+    fun connectServer(ip: String, port: Int, clientListener: ClientListener) {
         val uri = URI.create("ws://$ip:$port")
         val client = object : WebSocketClient(uri) {
             override fun onOpen(handshakedata: ServerHandshake?) {
@@ -287,13 +298,13 @@ object SocketUtils {
                     )
                 }
                 scope.launch {
-                    clientListener.onOpen(handshakedata, clientListener.reference.get())
+                    clientListener.onOpen(handshakedata)
                 }
             }
 
             override fun onMessage(message: String?) {
                 scope.launch {
-                    clientListener.onMessage(message, clientListener.reference.get())
+                    clientListener.onMessage(message)
                 }
             }
 
@@ -302,13 +313,13 @@ object SocketUtils {
                 val deviceBean = deviceOutList.find { it.ip == ip && it.port == port }
                 deviceBean?.let { deviceOutList.remove(it) }
                 scope.launch {
-                    clientListener.onClose(code, reason, remote, clientListener.reference.get())
+                    clientListener.onClose(code, reason, remote)
                 }
             }
 
             override fun onError(ex: Exception?) {
                 scope.launch {
-                    clientListener.onError(ex, clientListener.reference.get())
+                    clientListener.onError(ex)
                 }
             }
         }
