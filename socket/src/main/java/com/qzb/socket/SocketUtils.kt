@@ -73,7 +73,7 @@ object SocketUtils {
     /**
      * 开启服务端
      */
-    fun startServer(serverListener: ServerListener) {
+    fun startServer(serverListener: ServerListener): WebSocketServer {
 //        val serverPort = getUnUsedPort()
         val serverPort = SERVER_PORT
         webSocketServer = object : WebSocketServer(InetSocketAddress(serverPort)) {
@@ -125,8 +125,9 @@ object SocketUtils {
                 }
             }
         }
-        webSocketServer?.isReuseAddr = true
-        webSocketServer?.start()
+        webSocketServer!!.isReuseAddr = true
+        webSocketServer!!.start()
+        return webSocketServer!!
     }
 
 
@@ -283,7 +284,7 @@ object SocketUtils {
     /**
      * 连接服务
      */
-    fun connectServer(ip: String, port: Int, clientListener: ClientListener) {
+    fun connectServer(ip: String, port: Int, clientListener: ClientListener): WebSocketClient {
         val uri = URI.create("ws://$ip:$port")
         val client = object : WebSocketClient(uri) {
             override fun onOpen(handshakedata: ServerHandshake?) {
@@ -328,6 +329,7 @@ object SocketUtils {
             client.isReuseAddr = true
             client.connect()
         }
+        return client
     }
 
     fun disconnectServer(remoteIp: String, remotePort: Int) {
