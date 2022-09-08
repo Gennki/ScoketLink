@@ -77,6 +77,7 @@ object SocketUtils {
 //        val serverPort = getUnUsedPort()
         val serverPort = SERVER_PORT
         webSocketServer = object : WebSocketServer(InetSocketAddress(serverPort)) {
+            val serverContext = this
             override fun onOpen(conn: WebSocket?, handshake: ClientHandshake?) {
                 // 本机被外部设备连接上了
                 val ip = conn?.remoteSocketAddress?.address?.hostAddress
@@ -92,7 +93,7 @@ object SocketUtils {
                     )
                 }
                 scope.launch {
-                    serverListener.onOpen(conn, handshake)
+                    serverListener.onOpen(serverContext, conn, handshake)
                 }
             }
 
@@ -103,25 +104,25 @@ object SocketUtils {
                 val deviceBean = deviceInList.find { it.ip == ip && it.port == port }
                 deviceBean?.let { deviceInList.remove(it) }
                 scope.launch {
-                    serverListener.onClose(conn, code, reason, remote)
+                    serverListener.onClose(serverContext, conn, code, reason, remote)
                 }
             }
 
             override fun onMessage(conn: WebSocket?, message: String?) {
                 scope.launch {
-                    serverListener.onMessage(conn, message)
+                    serverListener.onMessage(serverContext, conn, message)
                 }
             }
 
             override fun onError(conn: WebSocket?, ex: Exception?) {
                 scope.launch {
-                    serverListener.onError(conn, ex)
+                    serverListener.onError(serverContext, conn, ex)
                 }
             }
 
             override fun onStart() {
                 scope.launch {
-                    serverListener.onStart()
+                    serverListener.onStart(serverContext)
                 }
             }
         }
@@ -287,6 +288,7 @@ object SocketUtils {
     fun connectServer(ip: String, port: Int, clientListener: ClientListener): WebSocketClient {
         val uri = URI.create("ws://$ip:$port")
         val client = object : WebSocketClient(uri) {
+            val clientContext = this
             override fun onOpen(handshakedata: ServerHandshake?) {
                 // 本机连上了外部设备
                 val deviceBean = deviceOutList.find { it.ip == ip && it.port == port }
@@ -300,13 +302,13 @@ object SocketUtils {
                     )
                 }
                 scope.launch {
-                    clientListener.onOpen(handshakedata)
+                    clientListener.onOpen(clientContext,handshakedata)
                 }
             }
 
             override fun onMessage(message: String?) {
                 scope.launch {
-                    clientListener.onMessage(message)
+                    clientListener.onMessage(clientContext,message)
                 }
             }
 
@@ -315,13 +317,13 @@ object SocketUtils {
                 val deviceBean = deviceOutList.find { it.ip == ip && it.port == port }
                 deviceBean?.let { deviceOutList.remove(it) }
                 scope.launch {
-                    clientListener.onClose(code, reason, remote)
+                    clientListener.onClose(clientContext,code, reason, remote)
                 }
             }
 
             override fun onError(ex: Exception?) {
                 scope.launch {
-                    clientListener.onError(ex)
+                    clientListener.onError(clientContext,ex)
                 }
             }
         }

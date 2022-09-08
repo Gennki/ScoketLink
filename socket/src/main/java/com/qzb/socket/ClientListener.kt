@@ -1,6 +1,7 @@
 package com.qzb.socket
 
 import android.util.Log
+import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.lang.ref.WeakReference
 
@@ -14,19 +15,19 @@ import java.lang.ref.WeakReference
  */
 abstract class ClientListener {
 
-    open fun onOpen(handshakedata: ServerHandshake?) {
+    open fun onOpen(client: WebSocketClient, handshakedata: ServerHandshake?) {
         Log.d(TAG, "ClientListener onOpen")
     }
 
-    open fun onMessage(message: String?) {
+    open fun onMessage(client: WebSocketClient, message: String?) {
         Log.d(TAG, "ClientListener onMessage:$message")
     }
 
-    open fun onClose(code: Int, reason: String?, remote: Boolean) {
+    open fun onClose(client: WebSocketClient, code: Int, reason: String?, remote: Boolean) {
         Log.d(TAG, "ClientListener onClose:code=$code,reason=$reason")
     }
 
-    open fun onError(ex: Exception?) {
+    open fun onError(client: WebSocketClient, ex: Exception?) {
         Log.d(TAG, "ClientListener onError:${ex?.message}")
     }
 }

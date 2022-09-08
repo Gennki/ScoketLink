@@ -3,6 +3,7 @@ package com.qzb.socket
 import android.util.Log
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
+import org.java_websocket.server.WebSocketServer
 import java.lang.ref.WeakReference
 
 /**
@@ -15,23 +16,23 @@ import java.lang.ref.WeakReference
  */
 abstract class ServerListener {
 
-    open fun onOpen(conn: WebSocket?, handshake: ClientHandshake?) {
+    open fun onOpen(webSocketServer: WebSocketServer, conn: WebSocket?, handshake: ClientHandshake?) {
         Log.d(TAG, "ServerListener onOpen")
     }
 
-    open fun onClose(conn: WebSocket?, code: Int, reason: String?, remote: Boolean) {
+    open fun onClose(webSocketServer: WebSocketServer, conn: WebSocket?, code: Int, reason: String?, remote: Boolean) {
         Log.d(TAG, "ServerListener onClose")
     }
 
-    open fun onMessage(conn: WebSocket?, message: String?) {
+    open fun onMessage(webSocketServer: WebSocketServer, conn: WebSocket?, message: String?) {
         Log.d(TAG, "ServerListener onMessage:$message")
     }
 
-    open fun onError(conn: WebSocket?, ex: Exception?) {
+    open fun onError(webSocketServer: WebSocketServer, conn: WebSocket?, ex: Exception?) {
         Log.d(TAG, "ServerListener onError:${ex?.message}")
     }
 
-    open fun onStart() {
+    open fun onStart(webSocketServer: WebSocketServer) {
         Log.d(TAG, "ServerListener onStart")
     }
 }

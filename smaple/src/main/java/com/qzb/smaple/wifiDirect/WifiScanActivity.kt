@@ -13,7 +13,9 @@ import com.qzb.socket.ServerListener
 import com.qzb.socket.SocketDiscoveryListener
 import com.qzb.socket.SocketUtils
 import org.java_websocket.WebSocket
+import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
+import org.java_websocket.server.WebSocketServer
 import java.lang.ref.WeakReference
 
 class WifiScanActivity : AppCompatActivity() {
@@ -59,8 +61,8 @@ class WifiScanActivity : AppCompatActivity() {
 
         SocketUtils.startServer(object : ServerListener() {
             val reference = WeakReference(this@WifiScanActivity)
-            override fun onMessage(conn: WebSocket?, message: String?) {
-                super.onMessage(conn, message)
+            override fun onMessage(webSocketServer: WebSocketServer, conn: WebSocket?, message: String?) {
+                super.onMessage(webSocketServer, conn, message)
                 reference.get()?.let { activity ->
                     activity.toast(activity, message)
                 }
@@ -75,8 +77,8 @@ class WifiScanActivity : AppCompatActivity() {
         SocketUtils.connectServer(ip!!, port, object : com.qzb.socket.ClientListener() {
             val reference = WeakReference(this@WifiScanActivity)
 
-            override fun onOpen(handshakedata: ServerHandshake?) {
-                super.onOpen(handshakedata)
+            override fun onOpen(client: WebSocketClient, handshakedata: ServerHandshake?) {
+                super.onOpen(client, handshakedata)
                 reference.get()?.also { activity ->
                     activity.toast(activity, "连接成功")
                     activity.data[position].isConnected = true
@@ -84,8 +86,8 @@ class WifiScanActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                super.onClose(code, reason, remote)
+            override fun onClose(client: WebSocketClient, code: Int, reason: String?, remote: Boolean) {
+                super.onClose(client, code, reason, remote)
                 reference.get()?.also { activity ->
                     activity.toast(activity, "断开连接")
                     activity.data[position].isConnected = false
@@ -93,8 +95,8 @@ class WifiScanActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onError(ex: Exception?) {
-                super.onError(ex)
+            override fun onError(client: WebSocketClient, ex: Exception?) {
+                super.onError(client, ex)
                 reference.get()?.also { activity ->
                     activity.toast(activity, ex?.message)
                 }
